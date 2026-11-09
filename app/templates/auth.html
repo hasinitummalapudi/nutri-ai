@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NutriAI — Account</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+<div class="bg-orb orb1"></div><div class="bg-orb orb2"></div>
+<div class="auth-wrap">
+  <div class="auth-brand"><span class="logo">N</span><div><b>NutriAI</b><small>AI-assisted diet recommendation</small></div></div>
+  <div class="auth-card">
+    <div class="kicker">{{ 'WELCOME BACK' if mode == 'login' else 'GET STARTED' }}</div>
+    <h1>{{ 'Login to NutriAI' if mode == 'login' else 'Create your account' }}</h1>
+    <p>{{ 'Use your email and password to access your personalized diet planner.' if mode == 'login' else 'Create a simple account with only your email and password.' }}</p>
+    <div id="authMessage" class="auth-message"></div>
+    <form id="authForm">
+      <label>Email<input id="email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+      <label>Password<input id="password" type="password" autocomplete="{{ 'current-password' if mode == 'login' else 'new-password' }}" placeholder="At least 6 characters" required></label>
+      <button class="btn primary auth-btn" type="submit">{{ 'Login' if mode == 'login' else 'Create account' }}</button>
+    </form>
+    {% if mode == 'login' %}
+      <p class="switch">Don't have an account? <a href="{{ url_for('main.signup_page') }}">Create one</a></p>
+    {% else %}
+      <p class="switch">Already have an account? <a href="{{ url_for('main.login_page') }}">Login</a></p>
+    {% endif %}
+    <div class="auth-note">Your account is stored locally for this version. Supabase can be connected later without changing the login flow.</div>
+  </div>
+</div>
+<script>
+const mode={{ mode|tojson }};
+const form=document.getElementById('authForm');
+const msg=document.getElementById('authMessage');
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault(); msg.className='auth-message'; msg.textContent='';
+  const endpoint=mode==='login'?'/api/login':'/api/signup';
+  try{
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value,password:document.getElementById('password').value})});
+    const d=await r.json();
+    if(!r.ok){msg.className='auth-message error';msg.textContent=d.error||'Something went wrong.';return;}
+    if(mode==='login'){window.location.href='/';return;}
+    msg.className='auth-message success';msg.textContent=d.message||'Account created. Redirecting to login...';
+    setTimeout(()=>window.location.href='/login',700);
+  }catch(err){msg.className='auth-message error';msg.textContent='Could not connect to the server.';}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NutriAI — AI Assisted Diet Recommendation</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="bg-orb orb1"></div><div class="bg-orb orb2"></div>
+<header class="nav">
+  <div class="brand"><span class="logo">N</span><div><b>NutriAI</b><small>AI-assisted diet recommendation</small></div></div>
+  <div class="account"><span>{{ email }}</span><button class="logout-btn" onclick="logout()">Logout</button></div>
+  <nav><a href="#planner">Planner</a><a href="#week">7-day plan</a><a href="#food">Food catalog</a><a href="#grocery">Grocery</a></nav>
+</header>
+
+<main>
+<section class="hero">
+ <div class="hero-copy">
+  <span class="eyebrow">PERSONALIZED • DATA-DRIVEN • INDIAN FOOD CATALOG</span>
+  <h1>Build a food plan that fits <em>your life.</em></h1>
+  <p>NutriAI combines your preferences with the supplied food catalog to generate a varied 7-day meal plan, nutrition summary, swaps and a grocery list.</p>
+  <div class="hero-actions"><a class="btn primary" href="#planner">Build my plan</a><button class="btn ghost" onclick="showCatalog()">Explore foods</button></div>
+  <div class="trust"><span>✓ 1,331 catalog records</span><span>✓ Variety-first planning</span><span>✓ Supabase-ready architecture</span></div>
+ </div>
+ <div class="hero-card">
+   <div class="mini-top"><span>Today</span><span class="dot">●</span></div>
+   <div class="plate">🥗</div>
+   <h3>Smart meal matching</h3>
+   <p>Balanced choices are selected from your dataset instead of a hard-coded food list.</p>
+   <div class="metric-row"><div><b id="heroFoods">—</b><span>foods</span></div><div><b>7</b><span>days</span></div><div><b>4</b><span>slots/day</span></div></div>
+ </div>
+</section>
+
+<section id="planner" class="section">
+ <div class="section-head"><div><span class="kicker">01 / YOUR PROFILE</span><h2>Tell NutriAI about you</h2></div><p>These inputs guide the recommendation engine. This demo is designed for adults.</p></div>
+ <form id="profileForm" class="panel">
+  <div class="form-grid">
+   <label>Age<input id="age" type="number" min="18" max="100" value="25" required></label>
+   <label>Height (cm)<input id="height" type="number" min="100" max="230" value="165" required></label>
+   <label>Weight (kg)<input id="weight" type="number" min="25" max="300" value="65" required></label>
+   <label>Diet<select id="diet"><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="non-vegetarian">Non-vegetarian</option></select></label>
+   <label>Activity<select id="activity"><option value="low">Low</option><option value="light">Light</option><option value="moderate" selected>Moderate</option><option value="high">High</option></select></label>
+   <label>Goal<select id="goal"><option value="maintain">Maintain</option><option value="lose">Weight management</option><option value="gain">Muscle/weight gain</option></select></label>
+  </div>
+  <div class="form-bottom"><div class="hint">Your profile stays in this browser unless you connect a backend.</div><button class="btn primary" type="submit">✨ Generate 7-day plan</button></div>
+ </form>
+</section>
+
+<section id="dashboard" class="section hidden">
+ <div class="stats">
+  <div class="stat"><span>Estimated daily target</span><b id="targetCal">—</b><small>kcal/day</small></div>
+  <div class="stat"><span>Meals generated</span><b id="mealCount">—</b><small>unique selections</small></div>
+  <div class="stat"><span>Protein</span><b id="proteinAvg">—</b><small>g/day average</small></div>
+  <div class="stat"><span>Dataset</span><b id="dataCount">—</b><small>catalog foods</small></div>
+ </div>
+</section>
+
+<section id="week" class="section hidden">
+ <div class="section-head"><div><span class="kicker">02 / YOUR WEEK</span><h2>7-day meal plan</h2></div><button class="btn ghost" onclick="regenerate()">↻ Generate another week</button></div>
+ <div id="weekGrid" class="week-grid"></div>
+</section>
+
+<section id="grocery" class="section hidden">
+ <div class="section-head"><div><span class="kicker">03 / SMART GROCERY</span><h2>Grocery list</h2></div><button class="btn ghost" onclick="copyGrocery()">Copy list</button></div>
+ <div id="groceryList" class="panel grocery"></div>
+</section>
+
+<section id="food" class="section">
+ <div class="section-head"><div><span class="kicker">04 / FOOD CATALOG</span><h2>Explore your food options</h2></div><div class="search"><input id="searchBox" placeholder="Search dishes…"><select id="dietFilter"><option value="all">All diets</option><option>vegetarian</option><option>vegan</option><option>non-vegetarian</option></select></div></div>
+ <div id="catalog" class="food-grid"><div class="loading">Loading catalog…</div></div>
+</section>
+
+<section class="note"><b>Important:</b> NutriAI is an educational software project, not medical advice. Nutrition values come from the supplied dataset and can vary by recipe, ingredients and serving size. For medical conditions or a personalized clinical diet, consult a qualified professional.</section>
+</main>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body></html>
