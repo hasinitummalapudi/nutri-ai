@@ -35,15 +35,76 @@ async function generatePlan(){
  currentProfile=profile;currentPlan=d;localStorage.setItem("nutriai_profile",JSON.stringify(profile));localStorage.setItem("nutriai_plan",JSON.stringify(d));
  renderPlan(d); toast("Your new 7-day plan is ready.");
 }
-function renderPlan(p){
- $("#dashboard").classList.remove("hidden");$("#week").classList.remove("hidden");$("#grocery").classList.remove("hidden");
- $("#targetCal").textContent=p.target_calories.toLocaleString();let meals=p.days.flatMap(d=>d.meals);
- $("#mealCount").textContent=meals.length;$("#proteinAvg").textContent=Math.round(meals.reduce((s,m)=>s+m.protein,0)/7);$("#dataCount").textContent=$("#heroFoods").textContent;
- const g=$("#weekGrid");g.innerHTML="";
- p.days.forEach(day=>{const card=document.createElement("div");card.className="day-card";card.innerHTML=`<div class="day-head"><h3>Day ${day.day}</h3><span>${day.meals.reduce((s,m)=>s+m.calories,0).toFixed(0)} kcal</span></div>`;
- day.meals.forEach((m,i)=>{const row=document.createElement("div");row.className="meal";row.innerHTML=`<div class="meal-slot">${m.slot}</div><div><div class="meal-name">${esc(m.name)}</div><div class="meal-meta">${m.calories} kcal · ${m.protein}g protein</div></div><button class="swap" onclick='swapMeal(${day.day-1},${i})'>↻ Swap</button>`;card.appendChild(row)});g.appendChild(card)});
- buildGrocery(meals)
+
+function renderPlan(p) {
+    $("#dashboard").classList.remove("hidden");
+    $("#week").classList.remove("hidden");
+    $("#grocery").classList.remove("hidden");
+
+    $("#targetCal").textContent = p.target_calories.toLocaleString();
+
+    let meals = p.days.flatMap(d => d.meals);
+
+    $("#mealCount").textContent = meals.length;
+    $("#proteinAvg").textContent = Math.round(
+        meals.reduce((s, m) => s + m.protein, 0) / 7
+    );
+    $("#dataCount").textContent = $("#heroFoods").textContent;
+
+    const g = $("#weekGrid");
+    g.innerHTML = "";
+
+    p.days.forEach(day => {
+        const card = document.createElement("div");
+        card.className = "day-card";
+
+        card.innerHTML = `
+            <div class="day-head">
+                <h3>Day ${day.day}</h3>
+                <span>${day.meals.reduce((s, m) => s + m.calories, 0).toFixed(0)} kcal</span>
+            </div>
+        `;
+
+        day.meals.forEach((m, i) => {
+            const row = document.createElement("div");
+            row.className = "meal";
+
+            row.innerHTML = `
+                <div class="meal-slot">${esc(m.slot)}</div>
+                <div>
+                    <div class="meal-name">${esc(m.name)}</div>
+                    <div class="meal-meta">
+                        ${m.calories} kcal · ${m.protein}g protein
+                    </div>
+                </div>
+            `;
+
+            const swapBtn = document.createElement("button");
+            swapBtn.className = "swap";
+            swapBtn.textContent = "↻ Swap";
+            swapBtn.addEventListener("click", () => {
+                swapMeal(day.day - 1, i);
+            });
+
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "save-meal";
+            saveBtn.textContent = "♡ Save";
+            saveBtn.addEventListener("click", () => {
+                saveMeal(m);
+            });
+
+            row.appendChild(swapBtn);
+            row.appendChild(saveBtn);
+
+            card.appendChild(row);
+        });
+
+        g.appendChild(card);
+    });
+
+    buildGrocery(meals);
 }
+
 function buildGrocery(meals){
  const map={};meals.forEach(m=>String(m.ingredients||"").split(";").map(x=>x.trim()).filter(Boolean).forEach(i=>{const k=i.toLowerCase();map[k]=(map[k]||{name:i,count:0});map[k].count++}));
  const items=Object.values(map).sort((a,b)=>b.count-a.count);$("#groceryList").innerHTML=items.slice(0,60).map(x=>`<div class="grocery-item"><input type="checkbox"> ${esc(x.name)} <span style="color:#8a928d;font-size:9px">×${x.count}</span></div>`).join("");
@@ -51,6 +112,31 @@ function buildGrocery(meals){
 async function swapMeal(dayIndex,mealIndex){
  const m=currentPlan.days[dayIndex].meals[mealIndex];const r=await fetch("/api/swap",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({current_name:m.name,slot:m.slot,profile:currentProfile,seed:Date.now()})});const x=await r.json();if(!r.ok){toast(x.error||"No alternative");return}
  currentPlan.days[dayIndex].meals[mealIndex]=x;localStorage.setItem("nutriai_plan",JSON.stringify(currentPlan));renderPlan(currentPlan);toast("Meal swapped.");
+}
+async function saveMeal(meal) {
+    try {
+        const response = await fetch("/api/saved-meals", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                meal_name: meal.name,
+                meal_data: meal
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            toast(data.error || "Could not save meal.");
+            return;
+        }
+
+        toast("Meal saved successfully!");
+    } catch (error) {
+        toast("Unable to connect to server.");
+    }
 }
 function regenerate(){generatePlan()}
 function copyGrocery(){const text=[...document.querySelectorAll(".grocery-item")].map(x=>x.innerText).join("\n");navigator.clipboard.writeText(text);toast("Grocery list copied.")}

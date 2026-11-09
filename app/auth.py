@@ -1,41 +1,73 @@
-import json
+
 import os
-from pathlib import Path
-from threading import Lock
+import psycopg
 from werkzeug.security import generate_password_hash, check_password_hash
 
-USERS_PATH = Path(__file__).resolve().parent.parent / "users.json"
-_LOCK = Lock()
 
-def _load_users():
-    if not USERS_PATH.exists():
-        return {}
-    try:
-        return json.loads(USERS_PATH.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
+def get_connection():
+    database_url = os.environ.get("DATABASE_URL")
 
-def _save_users(users):
-    tmp = USERS_PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps(users, indent=2), encoding="utf-8")
-    tmp.replace(USERS_PATH)
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not configured.")
+
+    return psycopg.connect(database_url)
+
 
 def create_user(email, password):
     email = email.strip().lower()
+
     if not email or "@" not in email or "." not in email.split("@", 1)[-1]:
         return False, "Enter a valid email address."
+
     if len(password) < 6:
         return False, "Password must be at least 6 characters."
-    with _LOCK:
-        users = _load_users()
-        if email in users:
-            return False, "An account with this email already exists."
-        users[email] = {"password": generate_password_hash(password)}
-        _save_users(users)
-    return True, "Account created successfully. You can now log in."
+
+    password_hash = generate_password_hash(password)
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO public.app_users (email, password_hash)
+                    VALUES (%s, %s)
+                    ON CONFLICT (email) DO NOTHING
+                    RETURNING id
+                    """,
+                    (email, password_hash)
+                )
+
+                if cur.fetchone() is None:
+                    return False, "An account with this email already exists."
+
+        return True, "Account created successfully. You can now log in."
+
+    except psycopg.Error as e:
+        print("SUPABASE SIGNUP ERROR:", repr(e))
+        return False, "Database error. Check the Flask terminal."
+
 
 def authenticate(email, password):
     email = email.strip().lower()
-    with _LOCK:
-        user = _load_users().get(email)
-    return bool(user and check_password_hash(user.get("password", ""), password))
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT password_hash
+                    FROM public.app_users
+                    WHERE email = %s
+                    """,
+                    (email,)
+                )
+
+                user = cur.fetchone()
+
+        return bool(
+            user and check_password_hash(user[0], password)
+        )
+
+    except psycopg.Error as e:
+        print("SUPABASE LOGIN ERROR:", repr(e))
+        return False

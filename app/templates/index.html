@@ -60,6 +60,20 @@
  <div id="weekGrid" class="week-grid"></div>
 </section>
 
+
+<section id="savedMealsSection" class="section hidden">
+ <div class="section-head">
+  <div>
+   <span class="kicker">03 / YOUR COLLECTION</span>
+   <h2>My Saved Meals</h2>
+  </div>
+  <button class="btn ghost" onclick="loadSavedMeals()">↻ Refresh</button>
+ </div>
+ <div id="savedMealsList" class="food-grid">
+  <div class="loading">Loading saved meals...</div>
+ </div>
+</section>
+
 <section id="grocery" class="section hidden">
  <div class="section-head"><div><span class="kicker">03 / SMART GROCERY</span><h2>Grocery list</h2></div><button class="btn ghost" onclick="copyGrocery()">Copy list</button></div>
  <div id="groceryList" class="panel grocery"></div>
